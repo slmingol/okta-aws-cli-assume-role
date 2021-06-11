@@ -168,6 +168,26 @@ env OKTA_AWS_ROLE_TO_ASSUME="\$roleARN" \
 EOF
 chmod +x "${PREFIX}/bin/okta-credential_process"
 
+# Create cached-okta-credential_process command
+cat <<EOF >"${PREFIX}/bin/cached-okta-credential_process"
+#!/bin/bash
+roleARN="\$1"
+cached_temp_aws_creds=$(cat ${PREFIX}/cached_temp_aws_creds || echo "")
+cached_roleARN=$(cat ${PREFIX}/cached_roleARN || echo "")
+
+if [ -z "$cached_temp_aws_creds" ] || [ "$cached_roleARN" != "$roleARN" ]; then
+    okta-credential_process "$roleARN" > ${PREFIX}/cached_temp_aws_creds
+    echo "$roleARN" > ${PREFIX}/cached_roleARN
+
+    cached_temp_aws_creds=$(cat ${PREFIX}/cached_temp_aws_creds || echo "")
+    cached_roleARN=$(cat ${PREFIX}/cached_roleARN || echo "")
+fi
+
+echo "$cached_temp_aws_creds"
+
+EOF
+chmod +x "${PREFIX}/bin/cached-okta-credential_process"
+
 # Create okta-listroles command
 cat <<EOF >"${PREFIX}/bin/okta-listroles"
 #!/bin/bash
